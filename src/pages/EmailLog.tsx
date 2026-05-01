@@ -45,9 +45,9 @@ export function EmailLog() {
       const totalSent = rows.reduce((s, r) => s + (r.emails_sent ?? 0), 0)
       const totalOpens = rows.reduce((s, r) => s + (r.email_opens ?? 0), 0)
       const totalClicks = rows.reduce((s, r) => s + (r.email_clicks ?? 0), 0)
-      const totalBounces = rows.reduce((s, r) => s + (r.email_bounces ?? 0), 0)
-      const totalUnsubs = rows.reduce((s, r) => s + (r.email_unsubs ?? 0), 0)
-      const totalComplaints = rows.reduce((s, r) => s + (r.email_complaints ?? 0), 0)
+      const totalBounces = 0
+      const totalUnsubs = 0
+      const totalComplaints = 0
       const distribution = [0.34, 0.26, 0.18, 0.14, 0.08]
 
       setSteps(distribution.map((w, i) => {
@@ -182,16 +182,12 @@ function Timeline({ lead }: { lead: Lead }) {
   const events = useMemo(() => {
     const arr: { icon: any; label: string; date: string | null; color: string; tag?: string }[] = []
     if (lead.created_at) arr.push({ icon: Globe, label: 'Lead ingested from KJLE', date: lead.created_at, color: 'text-white/60' })
-    if (lead.email_step != null) {
-      for (let i = 1; i <= (lead.email_step ?? 0); i++) {
-        arr.push({ icon: Mail, label: `Email ${i} sent`, date: lead.created_at, color: 'text-cyan' })
-      }
-    }
-    if (lead.email_opened) arr.push({ icon: Mail, label: 'Email opened', date: lead.created_at, color: 'text-success' })
-    if (lead.bridge_submitted) arr.push({ icon: Send, label: 'Bridge page submitted', date: lead.bridge_submitted_at, color: 'text-cyan' })
+    if (lead.reachinbox_enrolled) arr.push({ icon: Mail, label: 'Enrolled in email sequence', date: lead.created_at, color: 'text-cyan' })
+    if (lead.bridge_submitted_at) arr.push({ icon: Send, label: 'Bridge page submitted', date: lead.bridge_submitted_at, color: 'text-cyan' })
     if (lead.ava_called) arr.push({ icon: Phone, label: 'AVA called', date: lead.ava_called_at, color: 'text-gold', tag: lead.ava_outcome ?? undefined })
     if (lead.rvm_sent) arr.push({ icon: Radio, label: 'RVM dropped', date: lead.rvm_sent_at, color: 'text-cyan' })
-    if (lead.sms_sent) arr.push({ icon: MessageSquare, label: 'SMS sent', date: lead.sms_sent_at, color: 'text-cyan' })
+    if (lead.sms_day7_sent) arr.push({ icon: MessageSquare, label: 'Day 7 SMS sent', date: lead.sms_day7_sent_at, color: 'text-cyan' })
+    if (lead.sms_day10_sent) arr.push({ icon: MessageSquare, label: 'Day 10 SMS sent', date: lead.sms_day10_sent_at, color: 'text-cyan' })
     if (lead.allutional_clicked) arr.push({ icon: Globe, label: 'Allutional click', date: lead.allutional_clicked_at, color: 'text-gold' })
     if (lead.converted) arr.push({ icon: CheckCircle2, label: 'CONVERTED', date: lead.converted_at, color: 'text-success' })
     else arr.push({ icon: XCircle, label: 'Not yet converted', date: null, color: 'text-white/40' })
@@ -202,7 +198,7 @@ function Timeline({ lead }: { lead: Lead }) {
     <div className="hud-card p-5">
       <div className="mb-4">
         <div className="font-heading text-cyan text-lg">{lead.business_name ?? lead.email}</div>
-        <div className="text-sm text-white/50">{lead.email} · {lead.niche ?? '—'} · {lead.domain ?? '—'}</div>
+        <div className="text-sm text-white/50">{lead.email} · {lead.niche ?? '—'} · {lead.source_domain ?? '—'}</div>
       </div>
       <ol className="relative border-l border-cyan-dim ml-2 space-y-3">
         {events.map((e, i) => (

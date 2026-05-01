@@ -71,20 +71,7 @@ export function Chatbot() {
       .map(q => ({ ...q, convRate: ratio(q.conv, q.count) }))
   }, [sessions])
 
-  const openings = useMemo(() => {
-    const map = new Map<string, { msg: string; count: number; submits: number }>()
-    sessions.forEach(s => {
-      if (!s.opening_message) return
-      const cur = map.get(s.opening_message) ?? { msg: s.opening_message, count: 0, submits: 0 }
-      cur.count += 1
-      if (s.lead_captured) cur.submits += 1
-      map.set(s.opening_message, cur)
-    })
-    return Array.from(map.values())
-      .map(o => ({ ...o, rate: ratio(o.submits, o.count) }))
-      .sort((a, b) => b.rate - a.rate)
-      .slice(0, 5)
-  }, [sessions])
+  const openings: { msg: string; count: number; submits: number; rate: number }[] = []
 
   const maxQ = topQuestions[0]?.count ?? 1
 
@@ -187,11 +174,11 @@ export function Chatbot() {
                       <tr key={s.id} className="cursor-pointer" onClick={() => setExpanded(open ? null : s.id)}>
                         <td className="w-6">{open ? <ChevronDown className="w-4 h-4 text-cyan" /> : <ChevronRight className="w-4 h-4 text-white/40" />}</td>
                         <td className="text-white/70 whitespace-nowrap">{dateTime(s.started_at)}</td>
-                        <td className="text-cyan">{s.domain ?? '—'}</td>
+                        <td className="text-cyan">{s.source_domain ?? '—'}</td>
                         <td className="text-right">{s.message_count ?? 0}</td>
                         <td className="text-center">{s.lead_captured ? <Badge variant="cyan">Yes</Badge> : <span className="text-white/30">—</span>}</td>
                         <td className="text-center">{s.converted ? <Badge variant="success">Yes</Badge> : <span className="text-white/30">—</span>}</td>
-                        <td className="text-right">{s.duration_sec ?? 0}s</td>
+                        <td className="text-right">{s.started_at && s.ended_at ? `${Math.max(0, Math.round((new Date(s.ended_at).getTime() - new Date(s.started_at).getTime()) / 1000))}s` : '—'}</td>
                       </tr>
                       {open && (
                         <tr key={s.id + '-x'}>

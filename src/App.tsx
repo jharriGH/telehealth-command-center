@@ -8,6 +8,7 @@ import { EmailLog } from './pages/EmailLog'
 import { Chatbot } from './pages/Chatbot'
 import { Affiliate } from './pages/Affiliate'
 import { Costs } from './pages/Costs'
+import { Settings } from './pages/Settings'
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
       <Route path="/chatbot" element={<ProtectedRoute><Chatbot /></ProtectedRoute>} />
       <Route path="/affiliate" element={<ProtectedRoute><Affiliate /></ProtectedRoute>} />
       <Route path="/costs" element={<ProtectedRoute><Costs /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

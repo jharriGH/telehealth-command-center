@@ -37,7 +37,7 @@ export function CallLog() {
       const [callsRes, rvmsRes, costsRes] = await Promise.all([
         supabase.from('leads').select('*').eq('ava_called', true).gte('ava_called_at', `${from}T00:00:00`).lte('ava_called_at', `${to}T23:59:59`).order('ava_called_at', { ascending: false }).limit(2000),
         supabase.from('leads').select('*').eq('rvm_sent', true).gte('rvm_sent_at', `${from}T00:00:00`).lte('rvm_sent_at', `${to}T23:59:59`).order('rvm_sent_at', { ascending: false }).limit(1000),
-        supabase.from('cost_log').select('*').gte('occurred_at', monthStartIso),
+        supabase.from('cost_log').select('*').gte('logged_at', monthStartIso),
       ])
       if (callsRes.error) throw callsRes.error
       setCalls((callsRes.data ?? []) as Lead[])
@@ -74,7 +74,7 @@ export function CallLog() {
       phone: c.phone,
       duration_sec: c.ava_duration_sec,
       outcome: c.ava_outcome,
-      sms_sent: c.sms_sent,
+      sms_sent: c.sms_day7_sent || c.sms_day10_sent,
       converted: c.converted,
     }))
     downloadCSV(`ava_calls_${new Date().toISOString().slice(0, 10)}.csv`, rows)
@@ -84,10 +84,10 @@ export function CallLog() {
     const ava = costs.filter(c => c.service === 'ava' || c.service?.includes('ava'))
     const sly = costs.filter(c => c.service?.includes('slybroadcast'))
     const avaUnits = ava.reduce((s, c) => s + (c.units ?? 0), 0)
-    const avaCost = ava.reduce((s, c) => s + (Number(c.total_cost) || 0), 0)
+    const avaCost = ava.reduce((s, c) => s + (Number(c.cost_usd) || 0), 0)
     const slyUnits = sly.reduce((s, c) => s + (c.units ?? 0), 0)
-    const slyCost = sly.reduce((s, c) => s + (Number(c.total_cost) || 0), 0)
-    const slyRemaining = sly.length ? (sly[sly.length - 1].credits_remaining ?? 100) : 100
+    const slyCost = sly.reduce((s, c) => s + (Number(c.cost_usd) || 0), 0)
+    const slyRemaining = Math.max(0, 100 - slyUnits)
     return { avaUnits, avaCost, slyUnits, slyCost, slyRemaining, total: avaCost + slyCost }
   }, [costs])
 
@@ -155,7 +155,7 @@ export function CallLog() {
                       <td className="text-white/60">{c.phone ?? '—'}</td>
                       <td className="text-right">{c.ava_duration_sec ?? 0}s</td>
                       <td><Badge variant={outcomeVariant(c.ava_outcome)}>{c.ava_outcome ?? 'unknown'}</Badge></td>
-                      <td className="text-center">{c.sms_sent ? '✓' : ''}</td>
+                      <td className="text-center">{(c.sms_day7_sent || c.sms_day10_sent) ? '✓' : ''}</td>
                       <td className="text-center">{c.converted ? <Badge variant="success">Yes</Badge> : <span className="text-white/30">—</span>}</td>
                     </tr>
                   ))}
@@ -200,7 +200,7 @@ export function CallLog() {
                     <td className="text-white/60">{r.phone ?? '—'}</td>
                     <td className="text-center"><Badge variant={r.rvm_delivered ? 'success' : 'gray'}>{r.rvm_delivered ? 'sent' : 'pending'}</Badge></td>
                     <td className="text-center">{r.rvm_delivered ? '✓' : ''}</td>
-                    <td className="text-center">{r.sms_sent ? '✓' : ''}</td>
+                    <td className="text-center">{(r.sms_day7_sent || r.sms_day10_sent) ? '✓' : ''}</td>
                     <td className="text-center">{r.converted ? <Badge variant="success">Yes</Badge> : <span className="text-white/30">—</span>}</td>
                   </tr>
                 ))}

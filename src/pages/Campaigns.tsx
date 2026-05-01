@@ -42,7 +42,7 @@ export function Campaigns() {
     try {
       const [doms, leadsRes, daily] = await Promise.all([
         supabase.from('domain_stats').select('*').gte('stat_date', from).lte('stat_date', to),
-        supabase.from('leads').select('niche, email_step, email_opened, email_clicked, bridge_submitted, converted, created_at').gte('created_at', from),
+        supabase.from('leads').select('niche, reachinbox_enrolled, bridge_submitted_at, converted, created_at').gte('created_at', from),
         supabase.from('daily_stats').select('*').gte('stat_date', from).lte('stat_date', to),
       ])
       if (doms.error) throw doms.error
@@ -51,11 +51,11 @@ export function Campaigns() {
       const domMap = new Map<string, DomainRow>()
       ;(doms.data as DomainStat[]).forEach(r => {
         const cur = domMap.get(r.domain) ?? { domain: r.domain, sent: 0, opens: 0, openRate: 0, submits: 0, conv: 0, convRate: 0, revenue: 0, cost: 0, roi: 0 }
-        cur.sent += r.sent ?? 0
+        cur.sent += r.emails_sent ?? 0
         cur.opens += r.opens ?? 0
         cur.submits += r.bridge_submits ?? 0
         cur.conv += r.conversions ?? 0
-        cur.revenue += Number(r.revenue) || 0
+        cur.revenue += Number(r.revenue_usd) || 0
         domMap.set(r.domain, cur)
       })
       const domRows = Array.from(domMap.values()).map(d => ({
@@ -71,13 +71,10 @@ export function Campaigns() {
         const k = l.niche ?? 'unknown'
         const cur = nicheMap.get(k) ?? { niche: k, leads: 0, submits: 0, conv: 0, bestStep: new Map(), revenue: 0 }
         cur.leads += 1
-        if (l.bridge_submitted) cur.submits += 1
+        if (l.bridge_submitted_at) cur.submits += 1
         if (l.converted) {
           cur.conv += 1
           cur.revenue += 84
-        }
-        if (l.email_step != null && l.email_clicked) {
-          cur.bestStep.set(l.email_step, (cur.bestStep.get(l.email_step) ?? 0) + 1)
         }
         nicheMap.set(k, cur)
       })

@@ -35,7 +35,7 @@ export function Affiliate() {
     try {
       const [leadsRes, convs] = await Promise.all([
         supabase.from('leads').select('id, allutional_clicked, allutional_clicked_at, converted, converted_at, conversion_source, created_at').limit(5000),
-        supabase.from('conversions').select('*').order('converted_at', { ascending: true }),
+        supabase.from('conversions').select('*').order('enrolled_at', { ascending: true }),
       ])
       if (leadsRes.error) throw leadsRes.error
       setLeads((leadsRes.data ?? []) as Lead[])
@@ -108,8 +108,8 @@ export function Affiliate() {
 
     const monthMap = new Map<string, number>()
     conversions.forEach(c => {
-      if (!c.converted_at) return
-      const d = new Date(c.converted_at)
+      if (!c.enrolled_at) return
+      const d = new Date(c.enrolled_at)
       const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
       monthMap.set(k, (monthMap.get(k) ?? 0) + 1)
     })

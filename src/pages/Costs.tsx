@@ -52,7 +52,7 @@ export function Costs() {
       monthStart.setHours(0, 0, 0, 0)
       const last30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
       const [c, d, conv] = await Promise.all([
-        supabase.from('cost_log').select('*').gte('occurred_at', monthStart.toISOString()).order('occurred_at', { ascending: true }),
+        supabase.from('cost_log').select('*').gte('logged_at', monthStart.toISOString()).order('logged_at', { ascending: true }),
         supabase.from('daily_stats').select('*').gte('stat_date', last30),
         supabase.from('conversions').select('*'),
       ])
@@ -73,7 +73,7 @@ export function Costs() {
     const rows: ServiceRow[] = SERVICES.map(svc => {
       const matching = costs.filter(c => svc.match((c.service ?? '').toLowerCase()))
       const units = matching.reduce((s, m) => s + (m.units ?? 0), 0)
-      const cost = matching.reduce((s, m) => s + (Number(m.total_cost) || 0), 0)
+      const cost = matching.reduce((s, m) => s + (Number(m.cost_usd) || 0), 0)
       return {
         service: svc.label,
         label: svc.label,
@@ -91,15 +91,15 @@ export function Costs() {
 
   const slyRemaining = useMemo(() => {
     const sly = costs.filter(c => (c.service ?? '').toLowerCase().includes('slybroadcast'))
-    if (!sly.length) return SLY_PLAN_TOTAL
-    return sly[sly.length - 1].credits_remaining ?? SLY_PLAN_TOTAL
+    const used = sly.reduce((s, c) => s + (c.units ?? 0), 0)
+    return Math.max(0, SLY_PLAN_TOTAL - used)
   }, [costs])
 
   const economics = useMemo(() => {
     const submits = stats.reduce((s, r) => s + (r.bridge_submits ?? 0), 0)
     const clicks = stats.reduce((s, r) => s + (r.allutional_clicks ?? 0), 0)
-    const conv = stats.reduce((s, r) => s + (r.conversions ?? 0), 0)
-    const revenue = stats.reduce((s, r) => s + (Number(r.revenue) || 0), 0)
+    const conv = stats.reduce((s, r) => s + (r.total_conversions ?? 0), 0)
+    const revenue = stats.reduce((s, r) => s + (Number(r.new_mrr) || 0), 0)
     const ltv = 84
     const roi = totalCost > 0 ? (revenue - totalCost) / totalCost : 0
     return {
@@ -116,10 +116,10 @@ export function Costs() {
     type TrendRow = { date: string; ava: number; twilio: number; slybroadcast: number; claude: number }
     const map = new Map<string, TrendRow>()
     costs.forEach(c => {
-      const d = new Date(c.occurred_at).toISOString().slice(0, 10)
+      const d = new Date(c.logged_at).toISOString().slice(0, 10)
       const cur: TrendRow = map.get(d) ?? { date: d, ava: 0, twilio: 0, slybroadcast: 0, claude: 0 }
       const svc = (c.service ?? '').toLowerCase()
-      const cost = Number(c.total_cost) || 0
+      const cost = Number(c.cost_usd) || 0
       if (svc.includes('ava')) cur.ava += cost
       else if (svc.includes('twilio') || svc === 'sms') cur.twilio += cost
       else if (svc.includes('slybroadcast')) cur.slybroadcast += cost
@@ -132,18 +132,18 @@ export function Costs() {
   const monthlyRevVsCost = useMemo(() => {
     const map = new Map<string, { month: string; revenue: number; cost: number }>()
     conversions.forEach(c => {
-      if (!c.converted_at) return
-      const d = new Date(c.converted_at)
+      if (!c.enrolled_at) return
+      const d = new Date(c.enrolled_at)
       const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
       const cur = map.get(k) ?? { month: d.toLocaleDateString(undefined, { month: 'short' }), revenue: 0, cost: 0 }
-      cur.revenue += (Number(c.monthly_commission) || 7)
+      cur.revenue += (Number(c.commission_monthly) || 7)
       map.set(k, cur)
     })
     costs.forEach(c => {
-      const d = new Date(c.occurred_at)
+      const d = new Date(c.logged_at)
       const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
       const cur = map.get(k) ?? { month: d.toLocaleDateString(undefined, { month: 'short' }), revenue: 0, cost: 0 }
-      cur.cost += Number(c.total_cost) || 0
+      cur.cost += Number(c.cost_usd) || 0
       map.set(k, cur)
     })
     return Array.from(map.values())

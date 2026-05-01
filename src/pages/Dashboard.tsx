@@ -37,12 +37,12 @@ const ZERO_TOTALS: Totals = {
 function aggregate(rows: DailyStat[]): Totals {
   return rows.reduce<Totals>((acc, r) => ({
     bridge_submits: acc.bridge_submits + (r.bridge_submits ?? 0),
-    ava_calls: acc.ava_calls + (r.ava_calls ?? 0),
-    rvm_drops: acc.rvm_drops + (r.rvm_drops ?? 0),
+    ava_calls: acc.ava_calls + (r.ava_calls_fired ?? 0),
+    rvm_drops: acc.rvm_drops + (r.rvm_drops_sent ?? 0),
     email_opens: acc.email_opens + (r.email_opens ?? 0),
     allutional_clicks: acc.allutional_clicks + (r.allutional_clicks ?? 0),
-    conversions: acc.conversions + (r.conversions ?? 0),
-    revenue: acc.revenue + (Number(r.revenue) || 0),
+    conversions: acc.conversions + (r.total_conversions ?? 0),
+    revenue: acc.revenue + (Number(r.new_mrr) || 0),
     emails_sent: acc.emails_sent + (r.emails_sent ?? 0),
   }), { ...ZERO_TOTALS })
 }
@@ -72,7 +72,7 @@ export function Dashboard() {
         supabase.from('daily_stats').select('*').gte('stat_date', prevStart).lt('stat_date', prevEnd),
         supabase.from('domain_stats').select('*').gte('stat_date', rangeISODate('today')),
         supabase.from('conversions').select('id', { count: 'exact', head: true }).eq('active', true),
-        supabase.from('conversions').select('monthly_commission'),
+        supabase.from('conversions').select('commission_monthly'),
       ])
 
       if (curr.error) throw curr.error
@@ -80,8 +80,8 @@ export function Dashboard() {
       setPrevStats((prev.data ?? []) as DailyStat[])
       setDomainStats((doms.data ?? []) as DomainStat[])
       setActiveSubs(subs.count ?? 0)
-      const earned = ((earnedRows.data ?? []) as { monthly_commission: number | null }[])
-        .reduce((s, r) => s + (Number(r.monthly_commission) || 0), 0)
+      const earned = ((earnedRows.data ?? []) as { commission_monthly: number | null }[])
+        .reduce((s, r) => s + (Number(r.commission_monthly) || 0), 0)
       setTotalEarned(earned)
     } catch (err: any) {
       setError(err?.message ?? 'Failed to load')
@@ -128,8 +128,8 @@ export function Dashboard() {
       const k = r.stat_date
       const cur = map.get(k) ?? { date: k, submits: 0, calls: 0, conv: 0 }
       cur.submits += r.bridge_submits ?? 0
-      cur.calls += r.ava_calls ?? 0
-      cur.conv += r.conversions ?? 0
+      cur.calls += r.ava_calls_fired ?? 0
+      cur.conv += r.total_conversions ?? 0
       map.set(k, cur)
     })
     return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date))
@@ -141,7 +141,7 @@ export function Dashboard() {
       const cur = map.get(r.domain) ?? { domain: r.domain, submits: 0, conv: 0, rev: 0 }
       cur.submits += r.bridge_submits ?? 0
       cur.conv += r.conversions ?? 0
-      cur.rev += Number(r.revenue) || 0
+      cur.rev += Number(r.revenue_usd) || 0
       map.set(r.domain, cur)
     })
     return Array.from(map.values())
