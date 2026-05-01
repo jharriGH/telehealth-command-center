@@ -21,11 +21,11 @@ interface ServiceRow {
   budget: number
 }
 
-const SERVICES: { match: (s: string) => boolean; label: string; rate: number; budget: number }[] = [
-  { match: s => s.includes('ava'), label: 'AVA Calls', rate: 0.016, budget: 150 },
-  { match: s => s.includes('twilio') || s === 'sms', label: 'Twilio SMS', rate: 0.012, budget: 250 },
-  { match: s => s.includes('slybroadcast'), label: 'Slybroadcast', rate: 0.05, budget: 200 },
-  { match: s => s.includes('claude') || s.includes('chatbot'), label: 'Claude Chatbot', rate: 0.001, budget: 5 },
+const SERVICES: { match: (s: string) => boolean; label: string; rate: number; settingsKey: string; defaultBudget: number }[] = [
+  { match: s => s.includes('ava'),                                   label: 'AVA Calls',     rate: 0.016, settingsKey: 'budget_ava_usd',          defaultBudget: 150 },
+  { match: s => s.includes('twilio') || s === 'sms',                 label: 'Twilio SMS',    rate: 0.012, settingsKey: 'budget_twilio_usd',       defaultBudget: 250 },
+  { match: s => s.includes('slybroadcast'),                          label: 'Slybroadcast',  rate: 0.05,  settingsKey: 'budget_slybroadcast_usd', defaultBudget: 200 },
+  { match: s => s.includes('claude') || s.includes('chatbot'),       label: 'Claude Chatbot',rate: 0.001, settingsKey: 'budget_chatbot_usd',      defaultBudget:   5 },
 ]
 
 function statusVariant(pct: number): { variant: BadgeVariant; label: string } {
@@ -40,6 +40,9 @@ export function Costs() {
   const [costs, setCosts] = useState<CostLogEntry[]>([])
   const [stats, setStats] = useState<DailyStat[]>([])
   const [conversions, setConversions] = useState<Conversion[]>([])
+  const [budgets, setBudgets] = useState<Record<string, number>>(() =>
+    Object.fromEntries(SERVICES.map(s => [s.settingsKey, s.defaultBudget]))
+  )
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -47,19 +50,27 @@ export function Costs() {
     setLoading(true)
     setError(null)
     try {
-      const monthStart = new Date()
-      monthStart.setDate(1)
-      monthStart.setHours(0, 0, 0, 0)
+      const now = new Date()
+      const monthStartIso = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0).toISOString()
       const last30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
-      const [c, d, conv] = await Promise.all([
-        supabase.from('cost_log').select('*').gte('logged_at', monthStart.toISOString()).order('logged_at', { ascending: true }),
+      const [c, d, conv, settings] = await Promise.all([
+        supabase.from('cost_log').select('*').gte('logged_at', monthStartIso).order('logged_at', { ascending: true }),
         supabase.from('daily_stats').select('*').gte('stat_date', last30),
         supabase.from('conversions').select('*'),
+        supabase.from('settings').select('key,value').in('key', SERVICES.map(s => s.settingsKey)),
       ])
       if (c.error) throw c.error
       setCosts((c.data ?? []) as CostLogEntry[])
       setStats((d.data ?? []) as DailyStat[])
       setConversions((conv.data ?? []) as Conversion[])
+      if (!settings.error && settings.data?.length) {
+        const next = { ...Object.fromEntries(SERVICES.map(s => [s.settingsKey, s.defaultBudget])) }
+        for (const row of settings.data as { key: string; value: string }[]) {
+          const n = Number(row.value)
+          if (Number.isFinite(n)) next[row.key] = n
+        }
+        setBudgets(next)
+      }
     } catch (err: any) {
       setError(err?.message ?? 'Failed to load')
     } finally {
@@ -80,11 +91,11 @@ export function Costs() {
         units,
         rate: svc.rate,
         cost,
-        budget: svc.budget,
+        budget: budgets[svc.settingsKey] ?? svc.defaultBudget,
       }
     })
     return rows
-  }, [costs])
+  }, [costs, budgets])
 
   const totalCost = breakdown.reduce((s, r) => s + r.cost, 0)
   const totalBudget = breakdown.reduce((s, r) => s + r.budget, 0)
@@ -161,15 +172,23 @@ export function Costs() {
           <SkeletonRows rows={5} cols={6} />
         ) : (
           <div className="overflow-x-auto">
-            <table className="hud-table">
+            <table className="hud-table w-full table-fixed">
+              <colgroup>
+                <col className="w-[26%]" />
+                <col className="w-[12%]" />
+                <col className="w-[14%]" />
+                <col className="w-[16%]" />
+                <col className="w-[14%]" />
+                <col className="w-[18%]" />
+              </colgroup>
               <thead>
                 <tr>
-                  <th>Service</th>
+                  <th className="text-left">Service</th>
                   <th className="text-right">Units</th>
                   <th className="text-right">Rate</th>
                   <th className="text-right">This Month</th>
                   <th className="text-right">Budget</th>
-                  <th className="text-center">Status</th>
+                  <th className="text-right">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -178,22 +197,22 @@ export function Costs() {
                   const s = statusVariant(pct)
                   return (
                     <tr key={r.service}>
-                      <td className="text-cyan">{r.label}</td>
-                      <td className="text-right">{formatNumber(r.units)}</td>
-                      <td className="text-right text-white/60">{formatCurrency(r.rate, 3)}</td>
-                      <td className="text-right text-gold">{formatCurrency(r.cost, 2)}</td>
-                      <td className="text-right text-white/60">{formatCurrency(r.budget, 0)}</td>
-                      <td className="text-center"><Badge variant={s.variant}>{s.label} {formatPct(pct, 0)}</Badge></td>
+                      <td className="text-left text-cyan truncate">{r.label}</td>
+                      <td className="text-right tabular-nums">{formatNumber(r.units)}</td>
+                      <td className="text-right tabular-nums text-white/60">{formatCurrency(r.rate, 3)}</td>
+                      <td className="text-right tabular-nums text-gold">{formatCurrency(r.cost, 2)}</td>
+                      <td className="text-right tabular-nums text-white/60">{formatCurrency(r.budget, 0)}</td>
+                      <td className="text-right whitespace-nowrap"><Badge variant={s.variant}>{s.label} {formatPct(pct, 0)}</Badge></td>
                     </tr>
                   )
                 })}
                 <tr className="border-t-2 border-cyan-dim">
-                  <td className="text-white font-heading uppercase tracking-wider">Total</td>
-                  <td className="text-right">—</td>
-                  <td className="text-right">—</td>
-                  <td className="text-right text-cyan font-heading">{formatCurrency(totalCost, 2)}</td>
-                  <td className="text-right text-white/60">{formatCurrency(totalBudget, 0)}</td>
-                  <td className="text-center"><Badge variant={statusVariant(ratio(totalCost, totalBudget)).variant}>{formatPct(ratio(totalCost, totalBudget), 0)}</Badge></td>
+                  <td className="text-left text-white font-heading uppercase tracking-wider">Total</td>
+                  <td className="text-right tabular-nums text-white/40">—</td>
+                  <td className="text-right tabular-nums text-white/40">—</td>
+                  <td className="text-right tabular-nums text-cyan font-heading">{formatCurrency(totalCost, 2)}</td>
+                  <td className="text-right tabular-nums text-white/60">{formatCurrency(totalBudget, 0)}</td>
+                  <td className="text-right whitespace-nowrap"><Badge variant={statusVariant(ratio(totalCost, totalBudget)).variant}>{formatPct(ratio(totalCost, totalBudget), 0)}</Badge></td>
                 </tr>
               </tbody>
             </table>

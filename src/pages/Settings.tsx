@@ -72,6 +72,13 @@ const DEFAULT_NOTIFY = {
 const NOTIFY_KEY = 'cc_notify_v1'
 const AFFILIATE_KEY = 'cc_affiliate_v1'
 
+const BUDGET_FIELDS: { key: string; label: string; defaultValue: number }[] = [
+  { key: 'budget_ava_usd',          label: 'AVA Calls',     defaultValue: 150 },
+  { key: 'budget_twilio_usd',       label: 'Twilio SMS',    defaultValue: 250 },
+  { key: 'budget_slybroadcast_usd', label: 'Slybroadcast',  defaultValue: 200 },
+  { key: 'budget_chatbot_usd',      label: 'Claude Chatbot',defaultValue:   5 },
+]
+
 type HealthStatus = { code: number | null; ok: boolean | null; ts: Date | null; note?: string }
 
 const HEALTH_CHECKS: { key: string; label: string; url: string }[] = [
@@ -507,14 +514,86 @@ function NotificationsSection({ onToast }: { onToast: (m: string, k?: 'ok' | 'er
     catch { return DEFAULT_NOTIFY }
   })
 
+  const [budgets, setBudgets] = useState<Record<string, string>>(() =>
+    Object.fromEntries(BUDGET_FIELDS.map(b => [b.key, String(b.defaultValue)]))
+  )
+  const [budgetsLoaded, setBudgetsLoaded] = useState<'pending' | 'loaded' | 'missing'>('pending')
+  const [savingBudgets, setSavingBudgets] = useState(false)
+
+  useEffect(() => {
+    supabase.from('settings').select('key,value').in('key', BUDGET_FIELDS.map(b => b.key)).then(({ data, error }) => {
+      if (error) {
+        setBudgetsLoaded('missing')
+        return
+      }
+      const next = { ...Object.fromEntries(BUDGET_FIELDS.map(b => [b.key, String(b.defaultValue)])) }
+      ;(data ?? []).forEach((r: any) => { next[r.key] = String(r.value) })
+      setBudgets(next)
+      setBudgetsLoaded('loaded')
+    })
+  }, [])
+
   function update<K extends keyof typeof DEFAULT_NOTIFY>(k: K, v: typeof DEFAULT_NOTIFY[K]) {
     const next = { ...n, [k]: v }
     setN(next)
     localStorage.setItem(NOTIFY_KEY, JSON.stringify(next))
   }
 
+  async function saveBudgets() {
+    setSavingBudgets(true)
+    const rows = BUDGET_FIELDS.map(b => ({
+      key: b.key,
+      value: String(Number(budgets[b.key]) || b.defaultValue),
+      updated_at: new Date().toISOString(),
+    }))
+    const { error } = await supabase.from('settings').upsert(rows, { onConflict: 'key' })
+    setSavingBudgets(false)
+    if (error) {
+      if (/does not exist|not.*found.*table|schema.*cache/i.test(error.message)) {
+        onToast('Run supabase-th19b-settings.sql first to create telehealth.settings', 'err')
+      } else {
+        onToast(`Budget save failed: ${error.message}`, 'err')
+      }
+      setBudgetsLoaded('missing')
+    } else {
+      onToast('Budgets saved — Costs page will reflect on next refresh')
+      setBudgetsLoaded('loaded')
+    }
+  }
+
   return (
-    <Section title="Alert Settings" subtitle="Routed to notification email">
+    <Section title="Alert Settings" subtitle="Cost budgets · alert toggles · notification email">
+      <div className="hud-card p-4 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="font-heading uppercase tracking-wider text-sm text-cyan">Cost Budgets</div>
+            <div className="text-xs text-white/50 mt-0.5">
+              Drives the Costs page status badges.{' '}
+              {budgetsLoaded === 'missing' && <span className="text-warning">telehealth.settings table missing — values shown are defaults.</span>}
+              {budgetsLoaded === 'loaded' && <span className="text-success">Live from Supabase.</span>}
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {BUDGET_FIELDS.map(b => (
+            <div key={b.key}>
+              <label className="block text-[10px] font-heading uppercase tracking-wider text-white/60 mb-1">{b.label} ($/mo)</label>
+              <input
+                type="number" min={0} step={1}
+                value={budgets[b.key] ?? ''}
+                onChange={e => setBudgets(s => ({ ...s, [b.key]: e.target.value }))}
+                className="hud-input w-full"
+              />
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex justify-end">
+          <button onClick={saveBudgets} disabled={savingBudgets} className="hud-button-solid">
+            {savingBudgets ? 'Saving…' : 'Save Budgets'}
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Toggle label="Daily summary email" value={n.dailySummary} onChange={v => update('dailySummary', v)} />
         <Toggle label="New conversion alert" value={n.newConversion} onChange={v => update('newConversion', v)} />
