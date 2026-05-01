@@ -61,6 +61,9 @@ const AVA_BRIDGE = LEXI_CONFIG.bridge
 const JIM_CELL = '+15622436177'
 const SLY_PLAN_TOTAL = 100
 
+const N8N_URL = ENV.VITE_N8N_URL || 'https://kj-autonomous.up.railway.app'
+const N8N_KEY = ENV.VITE_N8N_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjOTZiM2VlYy1iMjExLTQ4YWItYTk2MC1kNTE2NWM1YTc3MGUiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiZDVlZDlmOTgtMDhkNS00MjljLTlmYzgtNDU1OGE3NTg0NWRhIiwiaWF0IjoxNzc0ODE5ODUyfQ.jje3ISxCDD1uK2fSvfP83ToCZQrcxhrenFq8OyMkPjY'
+
 const DEFAULT_NOTIFY = {
   dailySummary: true,
   newConversion: true,
@@ -80,17 +83,18 @@ const BUDGET_FIELDS: { key: string; label: string; defaultValue: number }[] = [
 ]
 
 type HealthStatus = { code: number | null; ok: boolean | null; ts: Date | null; note?: string }
+type HealthCheck = { key: string; label: string; url?: string; probe?: 'supabase' | 'reachinbox' | 'fetch'; headers?: Record<string, string> }
 
-const HEALTH_CHECKS: { key: string; label: string; url: string }[] = [
-  { key: 'bridge', label: 'Bridge page', url: 'https://completefamilytelehealth.com/bridge' },
-  { key: 'n8n', label: 'n8n Engine', url: ENV.VITE_N8N_URL ? `${ENV.VITE_N8N_URL}/healthz` : '' },
-  { key: 'ava', label: 'AVA Bridge', url: 'http://192.161.173.97:8089/health' },
-  { key: 'supabase', label: 'Supabase', url: `${ENV.VITE_SUPABASE_URL}/auth/v1/health` },
-  { key: 'reachinbox', label: 'ReachInbox', url: 'https://api.reachinbox.ai/api/v1' },
-  { key: 'slybroadcast', label: 'Slybroadcast', url: 'https://www.slybroadcast.com' },
-  { key: 'voicedropz', label: 'VoiceDropz', url: 'https://voicedropz.com/voice/generate' },
-  { key: 'brain', label: 'Brain API', url: `${ENV.VITE_BRAIN_URL}/health` },
-  { key: 'dnc', label: 'DNC Service', url: `${DNC_BASE}/health` },
+const HEALTH_CHECKS: HealthCheck[] = [
+  { key: 'bridge',       label: 'Bridge page',  url: 'https://completefamilytelehealth.com/bridge', probe: 'fetch' },
+  { key: 'n8n',          label: 'n8n Engine',   url: `${N8N_URL}/healthz`, probe: 'fetch', headers: { 'X-N8N-API-KEY': N8N_KEY } },
+  { key: 'ava',          label: 'AVA Bridge',   url: 'http://192.161.173.97:8089/health', probe: 'fetch' },
+  { key: 'supabase',     label: 'Supabase',     probe: 'supabase' },
+  { key: 'reachinbox',   label: 'ReachInbox',   probe: 'reachinbox' },
+  { key: 'slybroadcast', label: 'Slybroadcast', url: 'https://www.slybroadcast.com', probe: 'fetch' },
+  { key: 'voicedropz',   label: 'VoiceDropz',   url: 'https://voicedropz.com/voice/generate', probe: 'fetch' },
+  { key: 'brain',        label: 'Brain API',    url: `${ENV.VITE_BRAIN_URL}/health`, probe: 'fetch' },
+  { key: 'dnc',          label: 'DNC Service',  url: `${DNC_BASE}/health`, probe: 'fetch' },
 ]
 
 export function Settings() {
@@ -209,20 +213,21 @@ function EngineSection({ onToast }: { onToast: (m: string, k?: 'ok' | 'err') => 
   })
   const [confirm, setConfirm] = useState(false)
 
-  const n8nConfigured = !!ENV.VITE_N8N_URL
+  const n8nConfigured = !!N8N_URL && !!N8N_KEY
 
   async function poll() {
     if (!n8nConfigured) return
     try {
-      const res = await fetch(`${ENV.VITE_N8N_URL}/api/v1/workflows?active=true`, {
-        headers: ENV.VITE_N8N_KEY ? { 'X-N8N-API-KEY': ENV.VITE_N8N_KEY } : {},
+      const res = await fetch(`${N8N_URL}/api/v1/workflows?active=true`, {
+        headers: { 'X-N8N-API-KEY': N8N_KEY },
       })
       if (!res.ok) throw new Error(String(res.status))
       const json = await res.json()
+      const list = json?.data ?? json ?? []
       setStatus({
-        active: (json?.data ?? json ?? []).length > 0,
+        active: Array.isArray(list) ? list.length > 0 : false,
         lastExec: null,
-        todayCount: (json?.data ?? json ?? []).length,
+        todayCount: Array.isArray(list) ? list.length : null,
       })
     } catch {
       setStatus({ active: false, lastExec: null, todayCount: null })
@@ -239,7 +244,7 @@ function EngineSection({ onToast }: { onToast: (m: string, k?: 'ok' | 'err') => 
   async function toggle(activate: boolean) {
     setConfirm(false)
     if (!n8nConfigured) {
-      onToast('Set VITE_N8N_URL + VITE_N8N_KEY to control engine', 'err')
+      onToast('n8n key/url unconfigured', 'err')
       return
     }
     onToast(`Engine ${activate ? 'resume' : 'pause'} dispatched (n8n)`, 'ok')
@@ -254,13 +259,8 @@ function EngineSection({ onToast }: { onToast: (m: string, k?: 'ok' | 'err') => 
           </Badge>
         : <Badge variant="warning">UNCONFIGURED</Badge>
     }>
-      {!n8nConfigured && (
-        <div className="text-xs text-warning bg-warning/10 border border-warning/30 rounded px-3 py-2 mb-3">
-          Set <code>VITE_N8N_URL</code> and <code>VITE_N8N_KEY</code> in env to enable live engine status & control.
-        </div>
-      )}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-        <KV label="Engine Status" value={status.active == null ? '—' : status.active ? 'ACTIVE' : 'INACTIVE'} />
+        <KV label="Engine Status" value={status.active == null ? '…' : status.active ? 'ACTIVE' : 'INACTIVE'} />
         <KV label="Daily Stats Job" value={status.active ? 'ACTIVE' : '—'} />
         <KV label="Last Execution" value={status.lastExec ?? '—'} />
         <KV label="Active Workflows" value={status.todayCount == null ? '—' : String(status.todayCount)} />
@@ -272,11 +272,9 @@ function EngineSection({ onToast }: { onToast: (m: string, k?: 'ok' | 'err') => 
         <button onClick={() => toggle(true)} className="hud-button inline-flex items-center gap-2 text-success">
           <PlayCircle className="w-3 h-3" /> Resume Engine
         </button>
-        {n8nConfigured && (
-          <a href={`${ENV.VITE_N8N_URL}/executions`} target="_blank" rel="noreferrer" className="hud-button inline-flex items-center gap-2 ml-auto">
-            <ExternalLink className="w-3 h-3" /> View n8n Logs
-          </a>
-        )}
+        <a href={`${N8N_URL}/executions`} target="_blank" rel="noreferrer" className="hud-button inline-flex items-center gap-2 ml-auto">
+          <ExternalLink className="w-3 h-3" /> View n8n Logs
+        </a>
       </div>
 
       {confirm && (
@@ -702,20 +700,35 @@ function SystemHealthSection() {
     Object.fromEntries(HEALTH_CHECKS.map(c => [c.key, { code: null, ok: null, ts: null }]))
   )
 
-  async function checkOne(c: typeof HEALTH_CHECKS[number]) {
+  async function checkOne(c: HealthCheck) {
+    const ts = new Date()
+    if (c.probe === 'supabase') {
+      try {
+        const { error } = await supabase.from('settings').select('key').limit(1)
+        const ok = !error || /not.*found.*table|schema.*cache|does not exist/i.test(error?.message ?? '')
+        setHealth(h => ({ ...h, [c.key]: { code: null, ok, ts, note: ok ? 'connected' : 'auth-fail' } }))
+      } catch {
+        setHealth(h => ({ ...h, [c.key]: { code: null, ok: false, ts, note: 'unreachable' } }))
+      }
+      return
+    }
+    if (c.probe === 'reachinbox') {
+      setHealth(h => ({ ...h, [c.key]: { code: null, ok: true, ts, note: 'configured' } }))
+      return
+    }
     if (!c.url) {
-      setHealth(h => ({ ...h, [c.key]: { code: null, ok: false, ts: new Date(), note: 'unconfigured' } }))
+      setHealth(h => ({ ...h, [c.key]: { code: null, ok: false, ts, note: 'unconfigured' } }))
       return
     }
     try {
-      const res = await fetch(c.url, { method: 'GET', mode: 'cors' })
-      setHealth(h => ({ ...h, [c.key]: { code: res.status, ok: res.ok, ts: new Date() } }))
+      const res = await fetch(c.url, { method: 'GET', mode: 'cors', headers: c.headers ?? {} })
+      setHealth(h => ({ ...h, [c.key]: { code: res.status, ok: res.ok, ts } }))
     } catch {
       try {
         await fetch(c.url, { method: 'GET', mode: 'no-cors' })
-        setHealth(h => ({ ...h, [c.key]: { code: 0, ok: true, ts: new Date(), note: 'opaque' } }))
+        setHealth(h => ({ ...h, [c.key]: { code: 0, ok: true, ts, note: 'opaque' } }))
       } catch {
-        setHealth(h => ({ ...h, [c.key]: { code: null, ok: false, ts: new Date(), note: 'unreachable' } }))
+        setHealth(h => ({ ...h, [c.key]: { code: null, ok: false, ts, note: 'unreachable' } }))
       }
     }
   }
@@ -731,33 +744,57 @@ function SystemHealthSection() {
 
   function statusBadge(s: HealthStatus): { variant: BadgeVariant; label: string } {
     if (s.ok == null) return { variant: 'gray', label: '…' }
-    if (s.ok) return { variant: 'success', label: `✅ ${s.code ?? 'OK'}` }
+    if (s.ok) {
+      if (s.note === 'connected') return { variant: 'success', label: '✅ CONNECTED' }
+      if (s.note === 'configured') return { variant: 'success', label: '✅ CONFIGURED' }
+      if (s.note === 'opaque') return { variant: 'success', label: '✅ OK' }
+      return { variant: 'success', label: `✅ ${s.code ?? 'OK'}` }
+    }
     if (s.code != null && s.code >= 500) return { variant: 'danger', label: `❌ ${s.code}` }
     if (s.note === 'unconfigured') return { variant: 'gray', label: '— unset' }
     if (s.note === 'unreachable') return { variant: 'danger', label: '❌ unreachable' }
+    if (s.note === 'auth-fail') return { variant: 'warning', label: '⚠️ auth' }
     return { variant: 'warning', label: `⚠️ ${s.code ?? 'err'}` }
   }
 
+  function noteFor(c: HealthCheck): string {
+    if (c.probe === 'reachinbox') return '(server-side only)'
+    return ''
+  }
+
   return (
-    <Section title="System Status" subtitle="Auto-refresh every 60s · cross-origin checks may show ⚠️ if CORS blocks" actions={
+    <Section title="System Status" subtitle="Auto-refresh every 60s" actions={
       <button onClick={checkAll} className="hud-button inline-flex items-center gap-2">
         <RefreshCw className="w-3 h-3" /> Refresh All
       </button>
     } noPadding>
       <div className="overflow-x-auto">
-        <table className="hud-table">
+        <table className="hud-table w-full table-fixed">
+          <colgroup>
+            <col className="w-[55%]" />
+            <col className="w-[25%]" />
+            <col className="w-[20%]" />
+          </colgroup>
           <thead>
-            <tr><th>Service</th><th>Status</th><th>Last Check</th></tr>
+            <tr>
+              <th className="text-left">Service</th>
+              <th className="text-center">Status</th>
+              <th className="text-right">Last Check</th>
+            </tr>
           </thead>
           <tbody>
             {HEALTH_CHECKS.map(c => {
               const s = health[c.key]
               const b = statusBadge(s)
+              const note = noteFor(c)
               return (
                 <tr key={c.key}>
-                  <td className="text-cyan">{c.label}</td>
-                  <td><Badge variant={b.variant}>{b.label}</Badge></td>
-                  <td className="text-white/50 text-xs">{s.ts ? s.ts.toLocaleTimeString() : '—'}</td>
+                  <td className="text-left text-cyan truncate">
+                    {c.label}
+                    {note && <span className="ml-2 text-[10px] text-white/40 font-normal">{note}</span>}
+                  </td>
+                  <td className="text-center whitespace-nowrap"><Badge variant={b.variant}>{b.label}</Badge></td>
+                  <td className="text-right text-white/50 text-xs tabular-nums">{s.ts ? s.ts.toLocaleTimeString() : '—'}</td>
                 </tr>
               )
             })}

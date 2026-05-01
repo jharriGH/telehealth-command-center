@@ -188,7 +188,7 @@ export function Costs() {
                   <th className="text-right">Rate</th>
                   <th className="text-right">This Month</th>
                   <th className="text-right">Budget</th>
-                  <th className="text-right">Status</th>
+                  <th className="text-center">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -202,7 +202,7 @@ export function Costs() {
                       <td className="text-right tabular-nums text-white/60">{formatCurrency(r.rate, 3)}</td>
                       <td className="text-right tabular-nums text-gold">{formatCurrency(r.cost, 2)}</td>
                       <td className="text-right tabular-nums text-white/60">{formatCurrency(r.budget, 0)}</td>
-                      <td className="text-right whitespace-nowrap"><Badge variant={s.variant}>{s.label} {formatPct(pct, 0)}</Badge></td>
+                      <td className="text-center whitespace-nowrap"><Badge variant={s.variant}>{s.label} {formatPct(pct, 0)}</Badge></td>
                     </tr>
                   )
                 })}
@@ -212,7 +212,7 @@ export function Costs() {
                   <td className="text-right tabular-nums text-white/40">—</td>
                   <td className="text-right tabular-nums text-cyan font-heading">{formatCurrency(totalCost, 2)}</td>
                   <td className="text-right tabular-nums text-white/60">{formatCurrency(totalBudget, 0)}</td>
-                  <td className="text-right whitespace-nowrap"><Badge variant={statusVariant(ratio(totalCost, totalBudget)).variant}>{formatPct(ratio(totalCost, totalBudget), 0)}</Badge></td>
+                  <td className="text-center whitespace-nowrap"><Badge variant={statusVariant(ratio(totalCost, totalBudget)).variant}>{formatPct(ratio(totalCost, totalBudget), 0)}</Badge></td>
                 </tr>
               </tbody>
             </table>
