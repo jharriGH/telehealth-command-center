@@ -9,6 +9,8 @@ import { Chatbot } from './pages/Chatbot'
 import { Affiliate } from './pages/Affiliate'
 import { Costs } from './pages/Costs'
 import { Settings } from './pages/Settings'
+import { Help } from './pages/Help'
+import { Leila } from './pages/Leila'
 
 export default function App() {
   return (
@@ -22,6 +24,8 @@ export default function App() {
       <Route path="/affiliate" element={<ProtectedRoute><Affiliate /></ProtectedRoute>} />
       <Route path="/costs" element={<ProtectedRoute><Costs /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
+      <Route path="/leila" element={<ProtectedRoute><Leila /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

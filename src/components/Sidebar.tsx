@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
-  LayoutDashboard, Radio, Phone, Mail, MessageSquare, Link2, DollarSign, LogOut, Activity, Settings as SettingsIcon,
+  LayoutDashboard, Radio, Phone, Mail, MessageSquare, Link2, DollarSign, LogOut, Activity,
+  Settings as SettingsIcon, HelpCircle, Bot,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -16,7 +17,11 @@ const NAV = [
   { to: '/costs', label: 'Costs', icon: DollarSign },
 ]
 
-const SETTINGS_NAV = { to: '/settings', label: 'Settings', icon: SettingsIcon }
+const SECONDARY_NAV = [
+  { to: '/settings', label: 'Settings', icon: SettingsIcon },
+  { to: '/help',     label: 'Help',     icon: HelpCircle },
+  { to: '/leila',    label: 'Leila',    icon: Bot },
+]
 
 export function Sidebar() {
   const { user, signOut } = useAuth()
@@ -50,20 +55,23 @@ export function Sidebar() {
             </NavLink>
           ))}
           <div className="my-2 border-t border-card-border" />
-          <NavLink
-            to={SETTINGS_NAV.to}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 px-3 py-2 rounded-md font-heading uppercase tracking-wider text-sm transition-all',
-                isActive
-                  ? 'bg-cyan/10 text-cyan border border-cyan-dim shadow-glow'
-                  : 'text-white/40 hover:text-cyan hover:bg-cyan/5 border border-transparent'
-              )
-            }
-          >
-            <SETTINGS_NAV.icon className="w-4 h-4" />
-            <span>{SETTINGS_NAV.label}</span>
-          </NavLink>
+          {SECONDARY_NAV.map(({ to, label, icon: Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center gap-3 px-3 py-2 rounded-md font-heading uppercase tracking-wider text-sm transition-all',
+                  isActive
+                    ? 'bg-cyan/10 text-cyan border border-cyan-dim shadow-glow'
+                    : 'text-white/40 hover:text-cyan hover:bg-cyan/5 border border-transparent'
+                )
+              }
+            >
+              <Icon className="w-4 h-4" />
+              <span>{label}</span>
+            </NavLink>
+          ))}
         </nav>
         <div className="px-3 py-3 border-t border-card-border space-y-2">
           <div className="flex items-center justify-between px-2 text-xs">
@@ -93,7 +101,7 @@ export function Sidebar() {
 
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t border-card-border bg-bg/95 backdrop-blur-md z-30 flex items-center justify-around px-2 overflow-x-auto">
-        {[...NAV, SETTINGS_NAV].map(({ to, icon: Icon, label }) => (
+        {[...NAV, ...SECONDARY_NAV].map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}

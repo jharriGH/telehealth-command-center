@@ -147,24 +147,31 @@ export function Affiliate() {
           <EmptyState message="No click data attributed yet." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="hud-table">
+            <table className="hud-table th-table">
+              <colgroup>
+                <col className="w-[36%]" />
+                <col className="w-[14%]" />
+                <col className="w-[16%]" />
+                <col className="w-[14%]" />
+                <col className="w-[20%]" />
+              </colgroup>
               <thead>
                 <tr>
-                  <th>Source</th>
-                  <th className="text-right">Clicks</th>
-                  <th className="text-right">Conversions</th>
-                  <th className="text-right">Conv%</th>
-                  <th className="text-right">Annual Revenue</th>
+                  <th className="th-th-left">Source</th>
+                  <th className="th-th-right">Clicks</th>
+                  <th className="th-th-right">Conversions</th>
+                  <th className="th-th-right">Conv%</th>
+                  <th className="th-th-right">Annual Revenue</th>
                 </tr>
               </thead>
               <tbody>
                 {sources.map(s => (
                   <tr key={s.src}>
-                    <td className="text-cyan">{s.label}</td>
-                    <td className="text-right">{formatNumber(s.clicks)}</td>
-                    <td className="text-right">{formatNumber(s.conv)}</td>
-                    <td className="text-right text-success">{formatPct(s.rate)}</td>
-                    <td className="text-right text-gold">{formatCurrency(s.revenue, 0)}</td>
+                    <td className="th-td-left text-cyan truncate">{s.label}</td>
+                    <td className="th-td-right">{formatNumber(s.clicks)}</td>
+                    <td className="th-td-right">{formatNumber(s.conv)}</td>
+                    <td className="th-td-right text-success">{formatPct(s.rate)}</td>
+                    <td className="th-td-right text-gold">{formatCurrency(s.revenue, 0)}</td>
                   </tr>
                 ))}
               </tbody>

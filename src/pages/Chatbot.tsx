@@ -154,16 +154,25 @@ export function Chatbot() {
           <EmptyState message="Chatbot conversations will appear here." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="hud-table">
+            <table className="hud-table th-table">
+              <colgroup>
+                <col className="w-[4%]" />
+                <col className="w-[20%]" />
+                <col className="w-[26%]" />
+                <col className="w-[12%]" />
+                <col className="w-[14%]" />
+                <col className="w-[12%]" />
+                <col className="w-[12%]" />
+              </colgroup>
               <thead>
                 <tr>
-                  <th></th>
-                  <th>Timestamp</th>
-                  <th>Domain</th>
-                  <th className="text-right">Messages</th>
-                  <th className="text-center">Lead Captured</th>
-                  <th className="text-center">Converted</th>
-                  <th className="text-right">Duration</th>
+                  <th className="th-th-center"></th>
+                  <th className="th-th-left">Time</th>
+                  <th className="th-th-left">Domain</th>
+                  <th className="th-th-right">Messages</th>
+                  <th className="th-th-center">Captured</th>
+                  <th className="th-th-center">Converted</th>
+                  <th className="th-th-right">Duration</th>
                 </tr>
               </thead>
               <tbody>
@@ -172,13 +181,13 @@ export function Chatbot() {
                   return (
                     <>
                       <tr key={s.id} className="cursor-pointer" onClick={() => setExpanded(open ? null : s.id)}>
-                        <td className="w-6">{open ? <ChevronDown className="w-4 h-4 text-cyan" /> : <ChevronRight className="w-4 h-4 text-white/40" />}</td>
-                        <td className="text-white/70 whitespace-nowrap">{dateTime(s.started_at)}</td>
-                        <td className="text-cyan">{s.source_domain ?? '—'}</td>
-                        <td className="text-right">{s.message_count ?? 0}</td>
-                        <td className="text-center">{s.lead_captured ? <Badge variant="cyan">Yes</Badge> : <span className="text-white/30">—</span>}</td>
-                        <td className="text-center">{s.converted ? <Badge variant="success">Yes</Badge> : <span className="text-white/30">—</span>}</td>
-                        <td className="text-right">{s.started_at && s.ended_at ? `${Math.max(0, Math.round((new Date(s.ended_at).getTime() - new Date(s.started_at).getTime()) / 1000))}s` : '—'}</td>
+                        <td className="th-td-center">{open ? <ChevronDown className="w-4 h-4 text-cyan inline" /> : <ChevronRight className="w-4 h-4 text-white/40 inline" />}</td>
+                        <td className="th-td-left text-white/70 whitespace-nowrap">{dateTime(s.started_at)}</td>
+                        <td className="th-td-left text-cyan truncate">{s.source_domain ?? '—'}</td>
+                        <td className="th-td-right">{s.message_count ?? 0}</td>
+                        <td className="th-td-center">{s.lead_captured ? <Badge variant="cyan">Yes</Badge> : <span className="text-white/30">—</span>}</td>
+                        <td className="th-td-center">{s.converted ? <Badge variant="success">Yes</Badge> : <span className="text-white/30">—</span>}</td>
+                        <td className="th-td-right">{s.started_at && s.ended_at ? `${Math.max(0, Math.round((new Date(s.ended_at).getTime() - new Date(s.started_at).getTime()) / 1000))}s` : '—'}</td>
                       </tr>
                       {open && (
                         <tr key={s.id + '-x'}>

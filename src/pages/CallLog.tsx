@@ -133,30 +133,40 @@ export function CallLog() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="hud-table">
+              <table className="hud-table th-table">
+                <colgroup>
+                  <col className="w-[16%]" />
+                  <col className="w-[20%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[12%]" />
+                  <col className="w-[7%]" />
+                  <col className="w-[7%]" />
+                </colgroup>
                 <thead>
                   <tr>
-                    <th>Timestamp</th>
-                    <th>Business</th>
-                    <th>Niche</th>
-                    <th>Phone</th>
-                    <th className="text-right">Duration</th>
-                    <th>Outcome</th>
-                    <th className="text-center">SMS</th>
-                    <th className="text-center">Converted</th>
+                    <th className="th-th-left">Time</th>
+                    <th className="th-th-left">Business</th>
+                    <th className="th-th-left">Niche</th>
+                    <th className="th-th-left">Phone</th>
+                    <th className="th-th-right">Duration</th>
+                    <th className="th-th-center">Outcome</th>
+                    <th className="th-th-center">SMS</th>
+                    <th className="th-th-center">Converted</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paged.map(c => (
                     <tr key={c.id}>
-                      <td className="text-white/70 whitespace-nowrap">{c.ava_called_at ? dateTime(c.ava_called_at) : '—'}</td>
-                      <td className="text-cyan">{c.business_name ?? '—'}</td>
-                      <td className="text-white/60">{c.niche ?? '—'}</td>
-                      <td className="text-white/60">{c.phone ?? '—'}</td>
-                      <td className="text-right">{c.ava_duration_sec ?? 0}s</td>
-                      <td><Badge variant={outcomeVariant(c.ava_outcome)}>{c.ava_outcome ?? 'unknown'}</Badge></td>
-                      <td className="text-center">{(c.sms_day7_sent || c.sms_day10_sent) ? '✓' : ''}</td>
-                      <td className="text-center">{c.converted ? <Badge variant="success">Yes</Badge> : <span className="text-white/30">—</span>}</td>
+                      <td className="th-td-left text-white/70 whitespace-nowrap">{c.ava_called_at ? dateTime(c.ava_called_at) : '—'}</td>
+                      <td className="th-td-left text-cyan truncate">{c.business_name ?? '—'}</td>
+                      <td className="th-td-left text-white/60 truncate">{c.niche ?? '—'}</td>
+                      <td className="th-td-left text-white/60 truncate">{c.phone ?? '—'}</td>
+                      <td className="th-td-right">{c.ava_duration_sec ?? 0}s</td>
+                      <td className="th-td-center"><Badge variant={outcomeVariant(c.ava_outcome)}>{c.ava_outcome ?? 'unknown'}</Badge></td>
+                      <td className="th-td-center">{(c.sms_day7_sent || c.sms_day10_sent) ? '✓' : ''}</td>
+                      <td className="th-td-center">{c.converted ? <Badge variant="success">Yes</Badge> : <span className="text-white/30">—</span>}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -180,28 +190,37 @@ export function CallLog() {
           <EmptyState message="No RVM drops in this date range yet." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="hud-table">
+            <table className="hud-table th-table">
+              <colgroup>
+                <col className="w-[18%]" />
+                <col className="w-[26%]" />
+                <col className="w-[18%]" />
+                <col className="w-[12%]" />
+                <col className="w-[10%]" />
+                <col className="w-[8%]" />
+                <col className="w-[8%]" />
+              </colgroup>
               <thead>
                 <tr>
-                  <th>Timestamp</th>
-                  <th>Business</th>
-                  <th>Phone</th>
-                  <th className="text-center">Status</th>
-                  <th className="text-center">Delivered</th>
-                  <th className="text-center">SMS</th>
-                  <th className="text-center">Converted</th>
+                  <th className="th-th-left">Time</th>
+                  <th className="th-th-left">Business</th>
+                  <th className="th-th-left">Phone</th>
+                  <th className="th-th-center">Status</th>
+                  <th className="th-th-center">Delivered</th>
+                  <th className="th-th-center">SMS</th>
+                  <th className="th-th-center">Converted</th>
                 </tr>
               </thead>
               <tbody>
                 {rvms.slice(0, 100).map(r => (
                   <tr key={r.id}>
-                    <td className="text-white/70 whitespace-nowrap">{r.rvm_sent_at ? dateTime(r.rvm_sent_at) : '—'}</td>
-                    <td className="text-cyan">{r.business_name ?? '—'}</td>
-                    <td className="text-white/60">{r.phone ?? '—'}</td>
-                    <td className="text-center"><Badge variant={r.rvm_delivered ? 'success' : 'gray'}>{r.rvm_delivered ? 'sent' : 'pending'}</Badge></td>
-                    <td className="text-center">{r.rvm_delivered ? '✓' : ''}</td>
-                    <td className="text-center">{(r.sms_day7_sent || r.sms_day10_sent) ? '✓' : ''}</td>
-                    <td className="text-center">{r.converted ? <Badge variant="success">Yes</Badge> : <span className="text-white/30">—</span>}</td>
+                    <td className="th-td-left text-white/70 whitespace-nowrap">{r.rvm_sent_at ? dateTime(r.rvm_sent_at) : '—'}</td>
+                    <td className="th-td-left text-cyan truncate">{r.business_name ?? '—'}</td>
+                    <td className="th-td-left text-white/60 truncate">{r.phone ?? '—'}</td>
+                    <td className="th-td-center"><Badge variant={r.rvm_delivered ? 'success' : 'gray'}>{r.rvm_delivered ? 'sent' : 'pending'}</Badge></td>
+                    <td className="th-td-center">{r.rvm_delivered ? '✓' : ''}</td>
+                    <td className="th-td-center">{(r.sms_day7_sent || r.sms_day10_sent) ? '✓' : ''}</td>
+                    <td className="th-td-center">{r.converted ? <Badge variant="success">Yes</Badge> : <span className="text-white/30">—</span>}</td>
                   </tr>
                 ))}
               </tbody>

@@ -108,32 +108,43 @@ export function EmailLog() {
           <EmptyState message="ReachInbox per-step data syncs in next agent run." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="hud-table">
+            <table className="hud-table th-table">
+              <colgroup>
+                <col className="w-[6%]" />
+                <col className="w-[26%]" />
+                <col className="w-[10%]" />
+                <col className="w-[10%]" />
+                <col className="w-[10%]" />
+                <col className="w-[10%]" />
+                <col className="w-[10%]" />
+                <col className="w-[9%]" />
+                <col className="w-[9%]" />
+              </colgroup>
               <thead>
                 <tr>
-                  <th>Step</th>
-                  <th>Name</th>
-                  <th className="text-right">Sent</th>
-                  <th className="text-right">Opens</th>
-                  <th className="text-right">Open%</th>
-                  <th className="text-right">Clicks</th>
-                  <th className="text-right">Click%</th>
-                  <th className="text-right">Replies</th>
-                  <th className="text-right">Unsubs</th>
+                  <th className="th-th-center">Step</th>
+                  <th className="th-th-left">Name</th>
+                  <th className="th-th-right">Sent</th>
+                  <th className="th-th-right">Opens</th>
+                  <th className="th-th-right">Open%</th>
+                  <th className="th-th-right">Clicks</th>
+                  <th className="th-th-right">Click%</th>
+                  <th className="th-th-right">Replies</th>
+                  <th className="th-th-right">Unsubs</th>
                 </tr>
               </thead>
               <tbody>
                 {steps.map(s => (
                   <tr key={s.step}>
-                    <td className="text-gold font-heading">#{s.step}</td>
-                    <td className="text-cyan">{s.name}</td>
-                    <td className="text-right">{formatNumber(s.sent)}</td>
-                    <td className="text-right">{formatNumber(s.opens)}</td>
-                    <td className="text-right text-success">{formatPct(s.openRate)}</td>
-                    <td className="text-right">{formatNumber(s.clicks)}</td>
-                    <td className="text-right text-gold">{formatPct(s.clickRate)}</td>
-                    <td className="text-right">{formatNumber(s.replies)}</td>
-                    <td className="text-right text-warning">{formatNumber(s.unsubs)}</td>
+                    <td className="th-td-center text-gold font-heading">#{s.step}</td>
+                    <td className="th-td-left text-cyan truncate">{s.name}</td>
+                    <td className="th-td-right">{formatNumber(s.sent)}</td>
+                    <td className="th-td-right">{formatNumber(s.opens)}</td>
+                    <td className="th-td-right text-success">{formatPct(s.openRate)}</td>
+                    <td className="th-td-right">{formatNumber(s.clicks)}</td>
+                    <td className="th-td-right text-gold">{formatPct(s.clickRate)}</td>
+                    <td className="th-td-right">{formatNumber(s.replies)}</td>
+                    <td className="th-td-right text-warning">{formatNumber(s.unsubs)}</td>
                   </tr>
                 ))}
               </tbody>

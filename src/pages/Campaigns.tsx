@@ -132,7 +132,7 @@ export function Campaigns() {
   }
 
   const SortHeader = ({ k, label, align = 'left' }: { k: SortKey; label: string; align?: 'left' | 'right' }) => (
-    <th className={cn(align === 'right' && 'text-right')}>
+    <th className={cn('px-4 py-3 whitespace-nowrap', align === 'right' ? 'text-right' : 'text-left')}>
       <button onClick={() => toggleSort(k)} className={cn('inline-flex items-center gap-1 hover:text-cyan transition-colors', sort.key === k && 'text-cyan')}>
         {label}
         <ArrowUpDown className="w-3 h-3 opacity-50" />
@@ -163,7 +163,18 @@ export function Campaigns() {
           <EmptyState message="No domain stats in this date range." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="hud-table">
+            <table className="hud-table th-table">
+              <colgroup>
+                <col className="w-[24%]" />
+                <col className="w-[9%]" />
+                <col className="w-[9%]" />
+                <col className="w-[9%]" />
+                <col className="w-[10%]" />
+                <col className="w-[8%]" />
+                <col className="w-[10%]" />
+                <col className="w-[12%]" />
+                <col className="w-[9%]" />
+              </colgroup>
               <thead>
                 <tr>
                   <SortHeader k="domain" label="Domain" />
@@ -180,15 +191,15 @@ export function Campaigns() {
               <tbody>
                 {sortedDomains.map(d => (
                   <tr key={d.domain}>
-                    <td className="text-cyan">{d.domain}</td>
-                    <td className="text-right">{formatNumber(d.sent)}</td>
-                    <td className="text-right">{formatNumber(d.opens)}</td>
-                    <td className="text-right text-white/70">{formatPct(d.openRate)}</td>
-                    <td className="text-right">{formatNumber(d.submits)}</td>
-                    <td className="text-right">{formatNumber(d.conv)}</td>
-                    <td className="text-right text-success">{formatPct(d.convRate)}</td>
-                    <td className="text-right text-gold">{formatCurrency(d.revenue, 0)}</td>
-                    <td className="text-right">{isFinite(d.roi) ? formatPct(d.roi) : '—'}</td>
+                    <td className="th-td-left text-cyan truncate">{d.domain}</td>
+                    <td className="th-td-right">{formatNumber(d.sent)}</td>
+                    <td className="th-td-right">{formatNumber(d.opens)}</td>
+                    <td className="th-td-right text-white/70">{formatPct(d.openRate)}</td>
+                    <td className="th-td-right">{formatNumber(d.submits)}</td>
+                    <td className="th-td-right">{formatNumber(d.conv)}</td>
+                    <td className="th-td-right text-success">{formatPct(d.convRate)}</td>
+                    <td className="th-td-right text-gold">{formatCurrency(d.revenue, 0)}</td>
+                    <td className="th-td-right">{isFinite(d.roi) ? formatPct(d.roi) : '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -204,28 +215,37 @@ export function Campaigns() {
           <EmptyState message="No leads ingested yet for this range." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="hud-table">
+            <table className="hud-table th-table">
+              <colgroup>
+                <col className="w-[28%]" />
+                <col className="w-[12%]" />
+                <col className="w-[11%]" />
+                <col className="w-[10%]" />
+                <col className="w-[12%]" />
+                <col className="w-[15%]" />
+                <col className="w-[12%]" />
+              </colgroup>
               <thead>
                 <tr>
-                  <th>Niche</th>
-                  <th className="text-right">Leads Fed</th>
-                  <th className="text-right">Submits</th>
-                  <th className="text-right">Conv</th>
-                  <th className="text-right">Conv Rate</th>
-                  <th className="text-right">Best Email Step</th>
-                  <th className="text-right">Revenue</th>
+                  <th className="th-th-left">Niche</th>
+                  <th className="th-th-right">Leads Fed</th>
+                  <th className="th-th-right">Submits</th>
+                  <th className="th-th-right">Conv</th>
+                  <th className="th-th-right">Conv Rate</th>
+                  <th className="th-th-center">Best Email</th>
+                  <th className="th-th-right">Revenue</th>
                 </tr>
               </thead>
               <tbody>
                 {niches.map(n => (
                   <tr key={n.niche}>
-                    <td className="text-cyan">{n.niche}</td>
-                    <td className="text-right">{formatNumber(n.leads)}</td>
-                    <td className="text-right">{formatNumber(n.submits)}</td>
-                    <td className="text-right">{formatNumber(n.conv)}</td>
-                    <td className="text-right text-success">{formatPct(n.convRate)}</td>
-                    <td className="text-right">{n.bestStep ? `Step ${n.bestStep}` : '—'}</td>
-                    <td className="text-right text-gold">{formatCurrency(n.revenue, 0)}</td>
+                    <td className="th-td-left text-cyan truncate">{n.niche}</td>
+                    <td className="th-td-right">{formatNumber(n.leads)}</td>
+                    <td className="th-td-right">{formatNumber(n.submits)}</td>
+                    <td className="th-td-right">{formatNumber(n.conv)}</td>
+                    <td className="th-td-right text-success">{formatPct(n.convRate)}</td>
+                    <td className="th-td-center text-white/70">{n.bestStep ? `Step ${n.bestStep}` : '—'}</td>
+                    <td className="th-td-right text-gold">{formatCurrency(n.revenue, 0)}</td>
                   </tr>
                 ))}
               </tbody>

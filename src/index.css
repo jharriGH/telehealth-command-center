@@ -57,15 +57,22 @@ h1, h2, h3, h4, h5, h6 {
     @apply w-full text-sm;
   }
   .hud-table thead th {
-    @apply text-left font-heading uppercase text-xs tracking-wider text-cyan
-           border-b border-card-border px-3 py-2;
+    @apply font-heading uppercase text-xs tracking-wider text-cyan
+           border-b border-card-border px-4 py-3 whitespace-nowrap;
   }
   .hud-table tbody tr {
     @apply border-b border-white/5 hover:bg-cyan/5 transition-colors;
   }
   .hud-table tbody td {
-    @apply px-3 py-2;
+    @apply px-4 py-3 align-middle;
   }
+  .th-table     { @apply w-full table-fixed; }
+  .th-th-left   { @apply text-left   px-4 py-3 whitespace-nowrap; }
+  .th-th-right  { @apply text-right  px-4 py-3 whitespace-nowrap; }
+  .th-th-center { @apply text-center px-4 py-3 whitespace-nowrap; }
+  .th-td-left   { @apply text-left   px-4 py-3; }
+  .th-td-right  { @apply text-right  px-4 py-3 tabular-nums; }
+  .th-td-center { @apply text-center px-4 py-3; }
   .badge {
     @apply inline-block px-2 py-0.5 rounded text-xs font-heading uppercase tracking-wider;
   }
