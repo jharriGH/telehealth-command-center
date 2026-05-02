@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Send, Sparkles, Trash2, Copy, Download, Bot, AlertTriangle } from 'lucide-react'
+import { Send, Sparkles, Trash2, Copy, Download, Bot, AlertTriangle, Key } from 'lucide-react'
 import { Layout } from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 
-const ANTHROPIC_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY as string | undefined
+const KEY_STORAGE = 'cc_anthropic_key_v1'
 
 const LEILA_SYSTEM_PROMPT = `You are Leila, the AI advisor for the KJE Telehealth Cash Cow Machine. You know everything about this system and help Jim Harris (King James) operate and optimize it.
 
@@ -79,7 +79,28 @@ export function Leila() {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem(KEY_STORAGE) ?? '')
+  const [showKeyModal, setShowKeyModal] = useState(false)
+  const [keyDraft, setKeyDraft] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
+
+  function saveKey() {
+    const k = keyDraft.trim()
+    if (!k.startsWith('sk-ant-')) {
+      setError('Anthropic API keys start with sk-ant-')
+      return
+    }
+    localStorage.setItem(KEY_STORAGE, k)
+    setApiKey(k)
+    setShowKeyModal(false)
+    setKeyDraft('')
+    setError(null)
+  }
+
+  function clearKey() {
+    localStorage.removeItem(KEY_STORAGE)
+    setApiKey('')
+  }
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
@@ -87,8 +108,8 @@ export function Leila() {
 
   async function sendMessage(text: string) {
     if (!text.trim() || sending) return
-    if (!ANTHROPIC_KEY) {
-      setError('Set VITE_ANTHROPIC_API_KEY in .env then redeploy. Leila cannot run without it.')
+    if (!apiKey) {
+      setShowKeyModal(true)
       return
     }
     const next: Msg[] = [...messages, { role: 'user', content: text.trim(), ts: Date.now() }]
@@ -102,7 +123,7 @@ export function Leila() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': ANTHROPIC_KEY,
+          'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true',
         },
@@ -187,6 +208,9 @@ export function Leila() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={() => { setKeyDraft(apiKey); setShowKeyModal(true) }} className="hud-button inline-flex items-center gap-2">
+              <Key className="w-3 h-3" /> {apiKey ? 'Key Set' : 'Set Key'}
+            </button>
             <button onClick={exportTranscript} disabled={empty} className="hud-button inline-flex items-center gap-2 disabled:opacity-30">
               <Download className="w-3 h-3" /> Export
             </button>
@@ -196,9 +220,38 @@ export function Leila() {
           </div>
         </div>
 
-        {!ANTHROPIC_KEY && (
+        {!apiKey && (
           <div className="px-4 py-3 bg-warning/10 border-b border-warning/30 text-xs text-warning font-heading uppercase tracking-wider flex items-center gap-2">
-            <AlertTriangle className="w-3 h-3" /> Leila offline — set VITE_ANTHROPIC_API_KEY and redeploy
+            <AlertTriangle className="w-3 h-3" /> Click Set Key to add your Anthropic API key (stored locally in this browser only)
+          </div>
+        )}
+
+        {showKeyModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setShowKeyModal(false)}>
+            <div className="hud-card max-w-md w-full p-5" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="hud-heading text-base text-cyan">Anthropic API Key</h3>
+                <button onClick={() => setShowKeyModal(false)} className="text-white/50 hover:text-white">✕</button>
+              </div>
+              <p className="text-sm text-white/70 mb-3">
+                Pasted keys are stored in this browser only (localStorage). They are never committed to GitHub or shipped in the build. Get one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer" className="text-cyan underline">console.anthropic.com</a>.
+              </p>
+              <input
+                type="password"
+                value={keyDraft}
+                onChange={e => setKeyDraft(e.target.value)}
+                placeholder="sk-ant-api03-..."
+                className="hud-input w-full mb-3"
+                autoFocus
+              />
+              <div className="flex justify-between">
+                <button onClick={clearKey} className="hud-button text-danger">Remove Key</button>
+                <div className="flex gap-2">
+                  <button onClick={() => setShowKeyModal(false)} className="hud-button">Cancel</button>
+                  <button onClick={saveKey} className="hud-button-solid">Save</button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -279,11 +332,11 @@ export function Leila() {
           <input
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder={ANTHROPIC_KEY ? 'Ask Leila about the machine…' : 'Configure VITE_ANTHROPIC_API_KEY first'}
-            disabled={!ANTHROPIC_KEY || sending}
+            placeholder={apiKey ? 'Ask Leila about the machine…' : 'Click Set Key first'}
+            disabled={!apiKey || sending}
             className="hud-input flex-1"
           />
-          <button type="submit" disabled={!input.trim() || sending || !ANTHROPIC_KEY} className="hud-button-solid inline-flex items-center gap-2 disabled:opacity-30">
+          <button type="submit" disabled={!input.trim() || sending || !apiKey} className="hud-button-solid inline-flex items-center gap-2 disabled:opacity-30">
             <Send className="w-3 h-3" /> Send
           </button>
         </form>
